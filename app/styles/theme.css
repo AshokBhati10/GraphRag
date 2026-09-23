@@ -1,0 +1,349 @@
+/* GraphRAG Research - Light Editorial Theme */
+
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* CSS Variables - Light Editorial Palette */
+:root {
+    --color-bg: #FAFAF7;
+    --color-surface: #FFFFFF;
+    --color-surface-alt: #F3F1EA;
+    --color-border: #E2DFD6;
+    --color-primary: #0F5257;
+    --color-accent: #FF6B4A;
+    --color-accent-hover: #E85A3A;
+    --color-text-primary: #1A1D1E;
+    --color-text-secondary: #5C6265;
+    --color-success: #2D9B5C;
+    --color-warning: #E8A23D;
+    --color-danger: #D64545;
+    --color-graph-chunk: #0F5257;
+    --color-graph-entity: #FF6B4A;
+    --color-graph-edge: #C4C0B5;
+}
+
+/* Global styles - exclude icon fonts */
+*:not(.material-symbols-rounded):not(.material-symbols-outlined):not(.material-icons):not([class*="material-"]) {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* Main container */
+.main {
+    background: var(--color-bg) !important;
+    color: var(--color-text-primary) !important;
+    padding: 2rem 3rem !important;
+    max-width: 1600px !important;
+    margin: 0 auto !important;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background: var(--color-surface-alt) !important;
+    border-right: 1px solid var(--color-border) !important;
+}
+
+[data-testid="stSidebar"] * {
+    color: var(--color-text-primary) !important;
+}
+
+[data-testid="stSidebar"] .block-container {
+    padding: 2rem 1.5rem !important;
+}
+
+/* Header styling */
+h1 {
+    color: var(--color-text-primary) !important;
+    font-weight: 700 !important;
+    font-size: 2.5rem !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.02em !important;
+    margin-bottom: 0.75rem !important;
+}
+
+h2 {
+    color: var(--color-text-primary) !important;
+    font-weight: 600 !important;
+    font-size: 1.5rem !important;
+    margin-bottom: 1rem !important;
+    margin-top: 2rem !important;
+}
+
+h3 {
+    color: var(--color-text-primary) !important;
+    font-weight: 600 !important;
+    font-size: 1.125rem !important;
+    margin-bottom: 0.75rem !important;
+}
+
+h4 {
+    color: var(--color-text-primary) !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Remove automatic borders from containers */
+div[data-testid="stVerticalBlock"] > div > div,
+div[data-testid="stHorizontalBlock"] > div > div {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Column styling */
+div[data-testid="column"] {
+    background: transparent !important;
+    padding: 0 0.75rem !important;
+}
+
+div[data-testid="column"]:first-child {
+    padding-left: 0 !important;
+}
+
+div[data-testid="column"]:last-child {
+    padding-right: 0 !important;
+}
+
+/* Button styling */
+.stButton > button {
+    background: var(--color-accent) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 0.75rem 2rem !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    transition: background 0.2s ease !important;
+    cursor: pointer !important;
+}
+
+.stButton > button:hover {
+    background: var(--color-accent-hover) !important;
+}
+
+.stButton > button[kind="secondary"] {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    color: var(--color-text-primary) !important;
+}
+
+.stButton > button[kind="secondary"]:hover {
+    background: var(--color-surface-alt) !important;
+}
+
+/* Input styling */
+.stTextInput > div > div > input {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 8px !important;
+    padding: 0.875rem 1rem !important;
+    color: var(--color-text-primary) !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+}
+
+.stTextInput > div > div > input:focus {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 3px rgba(15, 82, 87, 0.1) !important;
+    outline: none !important;
+}
+
+.stTextInput > div > div > input::placeholder {
+    color: var(--color-text-secondary) !important;
+}
+
+.stTextInput label {
+    color: var(--color-text-primary) !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Checkbox styling */
+.stCheckbox {
+    color: var(--color-text-primary) !important;
+}
+
+.stCheckbox > label {
+    color: var(--color-text-primary) !important;
+    font-size: 0.9rem !important;
+}
+
+.stCheckbox input[type="checkbox"]:checked {
+    accent-color: var(--color-primary) !important;
+}
+
+/* Slider styling */
+.stSlider {
+    padding: 0.5rem 0 !important;
+}
+
+.stSlider > div > div > div > div {
+    background: var(--color-primary) !important;
+}
+
+.stSlider > div > div > div {
+    background: var(--color-border) !important;
+    height: 4px !important;
+}
+
+.stSlider [role="slider"] {
+    background: var(--color-primary) !important;
+    width: 18px !important;
+    height: 18px !important;
+}
+
+.stSlider label {
+    color: var(--color-text-primary) !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+}
+
+/* Expander styling - native Streamlit only */
+[data-testid="stExpander"] {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    margin-bottom: 1rem !important;
+}
+
+[data-testid="stExpander"] summary {
+    color: var(--color-text-primary) !important;
+    font-weight: 500 !important;
+    padding: 1rem !important;
+}
+
+[data-testid="stExpander"] summary:hover {
+    background: var(--color-surface-alt) !important;
+}
+
+[data-testid="stExpander"] > div:last-child {
+    padding: 1rem !important;
+    border-top: 1px solid var(--color-border) !important;
+}
+
+/* Alert/notification styling */
+.stAlert {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 8px !important;
+    color: var(--color-text-primary) !important;
+    padding: 1rem !important;
+}
+
+[data-baseweb="notification"] {
+    background: var(--color-surface) !important;
+    border-left: 3px solid var(--color-primary) !important;
+}
+
+.stSuccess {
+    background: rgba(45, 155, 92, 0.08) !important;
+    border-left-color: var(--color-success) !important;
+    color: var(--color-text-primary) !important;
+}
+
+.stError {
+    background: rgba(214, 69, 69, 0.08) !important;
+    border-left-color: var(--color-danger) !important;
+}
+
+.stInfo {
+    background: rgba(15, 82, 87, 0.08) !important;
+    border-left-color: var(--color-primary) !important;
+}
+
+.stWarning {
+    background: rgba(232, 162, 61, 0.08) !important;
+    border-left-color: var(--color-warning) !important;
+}
+
+/* Spinner */
+.stSpinner > div {
+    border-top-color: var(--color-primary) !important;
+}
+
+/* Markdown content */
+.stMarkdown {
+    color: var(--color-text-primary) !important;
+}
+
+.stMarkdown p {
+    color: var(--color-text-primary) !important;
+    line-height: 1.6 !important;
+}
+
+.stMarkdown a {
+    color: var(--color-primary) !important;
+    text-decoration: none !important;
+}
+
+.stMarkdown a:hover {
+    text-decoration: underline !important;
+}
+
+.stMarkdown strong {
+    font-weight: 600 !important;
+}
+
+/* Code blocks */
+code {
+    background: var(--color-surface-alt) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 4px !important;
+    padding: 0.2rem 0.4rem !important;
+    color: var(--color-primary) !important;
+    font-size: 0.9em !important;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace !important;
+}
+
+/* Divider */
+hr {
+    border-color: var(--color-border) !important;
+    margin: 2rem 0 !important;
+}
+
+/* Metrics */
+[data-testid="stMetricValue"] {
+    color: var(--color-primary) !important;
+    font-weight: 600 !important;
+}
+
+[data-testid="stMetricLabel"] {
+    color: var(--color-text-secondary) !important;
+}
+
+/* Hide empty containers */
+div[data-testid="stVerticalBlock"]:empty,
+div[data-testid="stHorizontalBlock"]:empty {
+    display: none !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-surface-alt) !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-border) !important;
+    border-radius: 5px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary) !important;
+}
+
+/* Spacing utilities */
+.section-spacing {
+    margin: 2rem 0 !important;
+}
+
+.card-padding {
+    padding: 1.25rem !important;
+}
