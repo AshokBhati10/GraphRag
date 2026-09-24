@@ -115,10 +115,11 @@ def main():
         <div style="margin-bottom: 1.5rem;">
             <p style="color: #5C6265; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem;">GRAPHRAG RESEARCH</p>
             <h1 style="margin-bottom: 0.5rem;">Scientific Literature Q&A</h1>
-            <p style="color: #5C6265; font-size: 1.05rem; line-height: 1.5;">Evidence-backed answers from scientific literature, powered by hybrid retrieval and knowledge graphs.</p>
+            <p style="color: #5C6265; font-size: 1.05rem; line-height: 1.5;">Explore scientific literature with evidence-backed answers powered by GraphRAG, hybrid retrieval, and knowledge graphs.</p>
             <div class="status-strip">
                 <span class="status-badge"><span class="status-dot"></span>Neo4j</span>
-                <span class="status-badge"><span class="status-dot"></span>Embedding</span>
+                <span class="status-badge"><span class="status-dot"></span>Vector Search</span>
+                <span class="status-badge"><span class="status-dot"></span>Graph Retrieval</span>
                 <span class="status-badge"><span class="status-dot"></span>LLM</span>
             </div>
         </div>
