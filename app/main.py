@@ -29,11 +29,10 @@ from src.retrieval.decompose import retrieve_decomposed
 from src.retrieval.retrieve import retrieve
 from src.retrieval.retrieve_with_pagerank import retrieve_with_pagerank
 
-from app.components.search_bar import render_search_bar
+from app.components.search_bar import render_search_bar, render_sidebar_settings
 from app.components.answer_card import render_answer_card
 from app.components.evidence_panel import render_evidence_panel
 from app.components.graph_view import render_graph_view
-from app.components.metrics_panel import render_metrics_panel
 
 # Load custom CSS
 css_path = os.path.join(project_root, "app", "styles", "theme.css")
@@ -104,60 +103,59 @@ def main():
     if not driver or not embedding_model or not llm_client:
         st.stop()
 
-    # Sidebar with information
+    # Sidebar: retrieval settings only (evaluation panel removed from UI;
+    # metrics remain available in code/data, just no longer displayed here)
     with st.sidebar:
-        st.markdown("#### ABOUT")
-        st.markdown("Evidence-backed answers from scientific literature using hybrid retrieval and knowledge graphs.")
+        st.markdown('<p class="section-title">Retrieval Settings</p>', unsafe_allow_html=True)
+        expand_graph, use_adaptive, use_gds, use_decomposition, top_k = render_sidebar_settings()
 
-        st.markdown("")
-        st.markdown("#### CAPABILITIES")
-        st.markdown("""
-        • Hybrid retrieval
-        • Query decomposition
-        • PageRank reranking
-        • Knowledge graph exploration
-        • Evaluation metrics
-        """)
-
-        st.markdown("---")
-        st.markdown("#### SYSTEM STATUS")
-
-        # Status indicators
-        st.markdown("""
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
-            <div style="display: flex; align-items: center; padding: 0.5rem; background: white; border: 1px solid #E2DFD6; border-radius: 6px;">
-                <span style="color: #2D9B5C; margin-right: 0.5rem; font-size: 0.8rem;">●</span>
-                <span style="font-size: 0.85rem;">Neo4j</span>
-            </div>
-            <div style="display: flex; align-items: center; padding: 0.5rem; background: white; border: 1px solid #E2DFD6; border-radius: 6px;">
-                <span style="color: #2D9B5C; margin-right: 0.5rem; font-size: 0.8rem;">●</span>
-                <span style="font-size: 0.85rem;">Embedding</span>
-            </div>
-            <div style="display: flex; align-items: center; padding: 0.5rem; background: white; border: 1px solid #E2DFD6; border-radius: 6px;">
-                <span style="color: #2D9B5C; margin-right: 0.5rem; font-size: 0.8rem;">●</span>
-                <span style="font-size: 0.85rem;">LLM</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("---")
-        st.markdown("#### EVALUATION")
-        render_metrics_panel()
-
-    # Header
+    # Header with inline status strip
     st.markdown(
         """
-        <div style="margin-bottom: 2rem;">
+        <div style="margin-bottom: 1.5rem;">
             <p style="color: #5C6265; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem;">GRAPHRAG RESEARCH</p>
             <h1 style="margin-bottom: 0.5rem;">Scientific Literature Q&A</h1>
             <p style="color: #5C6265; font-size: 1.05rem; line-height: 1.5;">Evidence-backed answers from scientific literature, powered by hybrid retrieval and knowledge graphs.</p>
+            <div class="status-strip">
+                <span class="status-badge"><span class="status-dot"></span>Neo4j</span>
+                <span class="status-badge"><span class="status-dot"></span>Embedding</span>
+                <span class="status-badge"><span class="status-dot"></span>LLM</span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
     # Main search interface
-    query, expand_graph, use_gds, top_k, use_decomposition, system_mode, use_adaptive = render_search_bar()
+    query, system_mode = render_search_bar()
+
+    # Example questions as clickable pills near the search bar (same callbacks)
+    st.markdown('<p class="section-title">Try an example</p>', unsafe_allow_html=True)
+    pill1, pill2, pill3 = st.columns(3)
+
+    with pill1:
+        st.button(
+            "Oxidative stress in neurodegeneration",
+            on_click=set_example_question,
+            args=("What role does oxidative stress play in neurodegenerative diseases?",),
+            type="secondary"
+        )
+
+    with pill2:
+        st.button(
+            "Cardiovascular risk factors",
+            on_click=set_example_question,
+            args=("What are the risk factors associated with cardiovascular disease?",),
+            type="secondary"
+        )
+
+    with pill3:
+        st.button(
+            "Mitochondrial dysfunction and cell death",
+            on_click=set_example_question,
+            args=("How does mitochondrial dysfunction contribute to programmed cell death?",),
+            type="secondary"
+        )
 
     # Search button
     if st.button("Search Literature", type="primary"):
@@ -263,49 +261,26 @@ def main():
                         prompt = build_rag_prompt(query, retrieved_chunks)
                         answer = llm_client.generate(prompt)
 
-                    # Display results
+                    # Display results in tabs (same data, organized)
                     st.markdown('<div style="margin: 2rem 0;"></div>', unsafe_allow_html=True)
 
-                    # Answer
-                    render_answer_card(answer)
+                    answer_tab, evidence_tab, graph_tab = st.tabs(
+                        ["Answer", "Evidence", "Knowledge Graph"]
+                    )
 
-                    st.markdown('<div style="margin: 3rem 0;"></div>', unsafe_allow_html=True)
+                    with answer_tab:
+                        render_answer_card(answer)
 
-                    # Evidence and Graph in two columns
-                    col1, col2 = st.columns([1, 1], gap="large")
-
-                    with col1:
+                    with evidence_tab:
                         render_evidence_panel(retrieved_chunks)
 
-                    with col2:
+                    with graph_tab:
                         chunk_ids = [c["chunk_id"] for c in retrieved_chunks]
                         render_graph_view(driver, chunk_ids)
 
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
                     st.info("Please try again or contact support if the issue persists.")
-
-    # Example questions
-    st.markdown('<div style="margin: 3rem 0 1.5rem 0;"></div>', unsafe_allow_html=True)
-    st.markdown("### Example Questions")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.button(
-            "Mitochondria and programmed cell death",
-            on_click=set_example_question,
-            args=("Do mitochondria play a role in programmed cell death?",),
-            type="secondary"
-        )
-
-    with col2:
-        st.button(
-            "Mitochondrial dysfunction and plant development",
-            on_click=set_example_question,
-            args=("What is the relationship between mitochondrial dysfunction and programmed cell death, and how does this affect plant development?",),
-            type="secondary"
-        )
 
 
 if __name__ == "__main__":

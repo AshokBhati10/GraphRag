@@ -8,13 +8,11 @@ import streamlit as st
 
 def render_search_bar():
     """
-    Render the search bar and control panel.
+    Render the search bar and system selector (main content area).
 
     Returns:
-        Tuple of (query, expand_graph, use_gds, top_k, use_decomposition,
-        system_mode, use_adaptive)
+        Tuple of (query, system_mode).
         - system_mode: "Modified GraphRAG" or "Baseline"
-        - use_adaptive: whether adaptive retrieval may skip graph expansion
     """
 
     # Search input
@@ -38,61 +36,48 @@ def render_search_bar():
 
     st.markdown('<div style="margin: 1.5rem 0;"></div>', unsafe_allow_html=True)
 
-    # Retrieval configuration heading
-    st.markdown(
-        """
-        <p style="
-            color: #5C6265;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 0 0 0.75rem 0;
-        ">Retrieval Configuration</p>
-        """,
-        unsafe_allow_html=True
+    return query, system_mode
+
+
+def render_sidebar_settings():
+    """
+    Render the retrieval settings controls in the sidebar.
+
+    Same controls, labels, defaults, and help texts as before — only the
+    render location changed. Returns:
+        Tuple of (expand_graph, use_adaptive, use_gds, use_decomposition, top_k)
+    """
+
+    expand_graph = st.checkbox(
+        "Graph Expansion",
+        value=True,
+        help="Expand retrieval via entity relationships"
     )
 
-    # Controls in columns
-    col1, col2, col3, col4, col5 = st.columns(5)
+    use_adaptive = st.checkbox(
+        "Adaptive",
+        value=True,
+        help="Let the system skip expansion when vector hits are confident"
+    )
 
-    with col1:
-        expand_graph = st.checkbox(
-            "Graph Expansion",
-            value=True,
-            help="Expand retrieval via entity relationships"
-        )
+    use_gds = st.checkbox(
+        "PageRank Reranking",
+        value=True,
+        help="Use PageRank to rerank results"
+    )
 
-    with col2:
-        use_adaptive = st.checkbox(
-            "Adaptive",
-            value=True,
-            help="Let the system skip expansion when vector hits are confident"
-        )
+    use_decomposition = st.checkbox(
+        "Query Decomposition",
+        value=False,
+        help="Break complex queries into sub-queries"
+    )
 
-    with col3:
-        use_gds = st.checkbox(
-            "PageRank Reranking",
-            value=True,
-            help="Use PageRank to rerank results"
-        )
+    top_k = st.slider(
+        "Top K Results",
+        min_value=3,
+        max_value=10,
+        value=5,
+        help="Number of chunks to retrieve"
+    )
 
-    with col4:
-        use_decomposition = st.checkbox(
-            "Query Decomposition",
-            value=False,
-            help="Break complex queries into sub-queries"
-        )
-
-    with col5:
-        top_k = st.slider(
-            "Top K Results",
-            min_value=3,
-            max_value=10,
-            value=5,
-            help="Number of chunks to retrieve"
-        )
-
-    st.markdown('<div style="margin: 1.5rem 0;"></div>', unsafe_allow_html=True)
-
-    return query, expand_graph, use_gds, top_k, use_decomposition, system_mode, use_adaptive
+    return expand_graph, use_adaptive, use_gds, use_decomposition, top_k

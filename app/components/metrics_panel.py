@@ -54,25 +54,19 @@ def render_metrics_panel():
                     full_val = float(full_val)
                     delta = full_val - baseline_val
                     if delta > 0:
-                        arrow, color = '↑', '#2D9B5C'
+                        arrow, color, cls = '↑', '#2D9B5C', 'metric-delta-up'
                     elif delta < 0:
-                        arrow, color = '↓', '#D64545'
+                        arrow, color, cls = '↓', '#D64545', 'metric-delta-down'
                     else:
-                        arrow, color = '=', '#5C6265'
+                        arrow, color, cls = '=', '#5C6265', 'metric-delta-flat'
 
                     st.markdown(
                         f"""
-                        <div style="
-                            background: white;
-                            border: 1px solid #E2DFD6;
-                            border-radius: 6px;
-                            padding: 0.75rem;
-                            margin-bottom: 0.5rem;
-                        ">
-                            <div style="font-size: 0.75rem; color: #5C6265; margin-bottom: 0.25rem;">{metric_name}</div>
+                        <div class="metric-card">
+                            <div class="metric-label">{metric_name}</div>
                             <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                                <span style="font-family: 'Monaco', monospace; font-size: 0.9rem; color: #1A1D1E; font-weight: 600;">{full_val:.3f}</span>
-                                <span style="font-size: 0.75rem; color: {color};">
+                                <span class="metric-value">{full_val:.3f}</span>
+                                <span style="font-size: 0.75rem;" class="{cls}">
                                     {arrow} {abs(delta):.3f}
                                 </span>
                             </div>
@@ -95,15 +89,9 @@ def render_metrics_panel():
 
                     st.markdown(
                         f"""
-                        <div style="
-                            background: white;
-                            border: 1px solid #E2DFD6;
-                            border-radius: 6px;
-                            padding: 0.75rem;
-                            margin-bottom: 0.5rem;
-                        ">
-                            <div style="font-size: 0.75rem; color: #5C6265; margin-bottom: 0.25rem;">{metric_name}</div>
-                            <div style="font-family: 'Monaco', monospace; font-size: 0.9rem; color: #1A1D1E; font-weight: 600;">{full_val:.3f}</div>
+                        <div class="metric-card">
+                            <div class="metric-label">{metric_name}</div>
+                            <div class="metric-value">{full_val:.3f}</div>
                         </div>
                         """,
                         unsafe_allow_html=True

@@ -21,7 +21,7 @@ def render_evidence_panel(chunks: List[Dict]):
         unsafe_allow_html=True
     )
 
-    with st.expander("View Evidence Details", expanded=False):
+    with st.expander(f"Evidence ({len(chunks)} chunks)", expanded=False):
         for i, chunk in enumerate(chunks, 1):
             chunk_id = chunk.get("chunk_id", f"chunk_{i}")
             text = chunk.get("text", "")
@@ -36,24 +36,26 @@ def render_evidence_panel(chunks: List[Dict]):
             explanation = chunk.get("score_explanation", "")
             strategy = chunk.get("retrieval_strategy", "")
 
-            # Truncate text for display
-            display_text = text[:300] + "..." if len(text) > 300 else text
+            # Collapsed per-chunk cards (same fields, details on demand)
+            with st.expander(f"[{i}] {chunk_id} — final {final_score:.3f}", expanded=(i == 1)):
+                # Truncate text for display
+                display_text = text[:300] + "..." if len(text) > 300 else text
 
-            why_html = ""
-            if explanation:
-                why_html = (
-                    '<p style="color: #5C6265; font-size: 0.78rem; '
-                    'margin-top: 0.75rem; font-family: Monaco, monospace;">'
-                    f"Why selected: {explanation}</p>"
-                )
-            strategy_html = ""
-            if strategy:
-                strategy_html = (
-                    '<p style="color: #5C6265; font-size: 0.78rem; '
-                    f'margin-top: 0.25rem;">Strategy: {strategy}</p>'
-                )
+                why_html = ""
+                if explanation:
+                    why_html = (
+                        '<p style="color: #5C6265; font-size: 0.78rem; '
+                        'margin-top: 0.75rem; font-family: Monaco, monospace;">'
+                        f"Why selected: {explanation}</p>"
+                    )
+                strategy_html = ""
+                if strategy:
+                    strategy_html = (
+                        '<p style="color: #5C6265; font-size: 0.78rem; '
+                        f'margin-top: 0.25rem;">Strategy: {strategy}</p>'
+                    )
 
-            st.markdown(
+                st.markdown(
                 f"""
                 <div style="
                     background: #FFFFFF;
@@ -116,5 +118,5 @@ def render_evidence_panel(chunks: List[Dict]):
                     {strategy_html}
                 </div>
                 """,
-                unsafe_allow_html=True
-            )
+                    unsafe_allow_html=True
+                )

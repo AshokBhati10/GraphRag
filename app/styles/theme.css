@@ -36,6 +36,18 @@
     margin: 0 auto !important;
 }
 
+/* Widen the central content column. Verified against the installed
+   Streamlit frontend: the main column is
+   div[data-testid="stMainBlockContainer"].block-container (emotion class
+   beneath it sets the restrictive max-width). This selector (0-2-1) beats
+   it regardless of stylesheet order. Sidebar untouched. */
+div[data-testid="stMainBlockContainer"].block-container {
+    max-width: 110rem !important;
+    width: calc(100% - 6rem) !important;
+    padding-left: 3rem !important;
+    padding-right: 3rem !important;
+}
+
 /* Sidebar */
 [data-testid="stSidebar"] {
     background: var(--color-surface-alt) !important;
@@ -346,4 +358,129 @@ div[data-testid="stHorizontalBlock"]:empty {
 
 .card-padding {
     padding: 1.25rem !important;
+}
+
+/* ---- Redesign additions (presentation only) ---- */
+
+/* Single accent: teal primary buttons */
+.stButton > button[kind="primary"] {
+    background: var(--color-primary) !important;
+}
+
+.stButton > button[kind="primary"]:hover {
+    background: #0B3F43 !important;
+}
+
+/* Pill/chip buttons (example questions — the only secondary buttons) */
+.stButton > button[kind="secondary"] {
+    border-radius: 999px !important;
+    padding: 0.5rem 1.25rem !important;
+    font-size: 0.85rem !important;
+}
+
+/* Answer hero card */
+.answer-hero {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-left: 4px solid var(--color-primary) !important;
+    border-radius: 12px !important;
+    padding: 2rem 2.25rem !important;
+    margin: 1rem 0 2.5rem 0 !important;
+    box-shadow: 0 2px 12px rgba(15, 82, 87, 0.07) !important;
+}
+
+.answer-hero p {
+    font-size: 1.08rem !important;
+    line-height: 1.75 !important;
+}
+
+/* Metric cards (evaluation sidebar) */
+.metric-card {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 8px !important;
+    padding: 0.75rem 0.9rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.metric-card .metric-value {
+    font-family: 'Monaco', monospace !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    color: var(--color-primary) !important;
+}
+
+.metric-card .metric-label {
+    font-size: 0.72rem !important;
+    color: var(--color-text-secondary) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 0.2rem !important;
+}
+
+.metric-delta-up { color: var(--color-success) !important; }
+.metric-delta-down { color: var(--color-danger) !important; }
+.metric-delta-flat { color: var(--color-text-secondary) !important; }
+
+/* Status strip badges */
+.status-strip {
+    display: flex !important;
+    gap: 0.5rem !important;
+    flex-wrap: wrap !important;
+    margin: 0.75rem 0 0 0 !important;
+}
+
+.status-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 999px !important;
+    padding: 0.3rem 0.8rem !important;
+    font-size: 0.78rem !important;
+    color: var(--color-text-primary) !important;
+}
+
+.status-dot {
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 50% !important;
+    background: var(--color-success) !important;
+    display: inline-block !important;
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0.25rem !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    border-radius: 8px 8px 0 0 !important;
+    padding: 0.6rem 1.25rem !important;
+    color: var(--color-text-secondary) !important;
+}
+
+.stTabs [aria-selected="true"] {
+    color: var(--color-primary) !important;
+    font-weight: 600 !important;
+}
+
+/* Graph frame */
+.graph-frame {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 12px !important;
+    padding: 1.25rem !important;
+    margin-top: 0.5rem !important;
+}
+
+/* Section headings */
+.section-title {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    color: var(--color-text-secondary) !important;
+    margin: 0 0 0.75rem 0 !important;
 }

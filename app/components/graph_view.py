@@ -28,7 +28,7 @@ def render_graph_view(driver, chunk_ids: List[str], show_similar: bool = True):
         st.info("No chunks to visualize")
         return
 
-    st.markdown("### Knowledge Graph")
+    st.markdown('<p class="section-title">Knowledge Graph</p>', unsafe_allow_html=True)
     st.markdown(
         '<p style="color: #5C6265; font-size: 0.9rem; margin-bottom: 1rem;">Entity relationships across the retrieved literature</p>',
         unsafe_allow_html=True
@@ -72,9 +72,10 @@ def render_graph_view(driver, chunk_ids: List[str], show_similar: bool = True):
                 except Exception:
                     similar_pairs = []
 
-            # Create PyVis network with light background
+            # Create PyVis network with light background.
+            # Sized to fill the tab width with a tall readable canvas.
             net = Network(
-                height="600px",
+                height="780px",
                 width="100%",
                 bgcolor="#FFFFFF",
                 font_color="#1A1D1E",
@@ -109,7 +110,7 @@ def render_graph_view(driver, chunk_ids: List[str], show_similar: bool = True):
                     "color": {
                         "color": "#C4C0B5"
                     },
-                    "width": 1.5
+                    "width": 2
                 }
             }
             """)
@@ -124,7 +125,7 @@ def render_graph_view(driver, chunk_ids: List[str], show_similar: bool = True):
                 entity_name = record["entity_name"]
                 entity_type = record["entity_type"] or "Unknown"
 
-                # Add chunk node (larger, teal)
+                # Add chunk node (dark teal box, largest)
                 if chunk_id not in added_chunks:
                     chunk_text = record["chunk_text"][:100] + "..." if len(record["chunk_text"]) > 100 else record["chunk_text"]
                     net.add_node(
@@ -132,14 +133,14 @@ def render_graph_view(driver, chunk_ids: List[str], show_similar: bool = True):
                         label=chunk_id,
                         title=chunk_text,
                         color="#0F5257",
-                        size=28,
+                        size=34,
                         shape="box",
-                        font={"color": "#FFFFFF", "size": 11, "face": "Monaco"},
+                        font={"color": "#FFFFFF", "size": 12, "face": "Monaco"},
                         borderWidth=0
                     )
                     added_chunks.add(chunk_id)
 
-                # Add entity node (coral)
+                # Add entity node (orange/coral dot)
                 if entity_name not in added_entities:
                     entity_type = record["entity_type"] if record["entity_type"] else "Entity"
                     net.add_node(
@@ -147,24 +148,24 @@ def render_graph_view(driver, chunk_ids: List[str], show_similar: bool = True):
                         label=entity_name,
                         title=f"{entity_name} ({entity_type})",
                         color="#FF6B4A",
-                        size=16,
+                        size=20,
                         shape="dot",
-                        font={"color": "#1A1D1E", "size": 10, "face": "Inter"},
+                        font={"color": "#1A1D1E", "size": 12, "face": "Inter"},
                         borderWidth=2,
                         borderWidthSelected=3
                     )
                     added_entities.add(entity_name)
 
-                # Add edge
-                net.add_edge(chunk_id, entity_name, color="#C4C0B5", width=1.5)
+                # Add MENTIONS edge (light subtle gray)
+                net.add_edge(chunk_id, entity_name, color="#C4C0B5", width=2)
 
-            # Add SEMANTIC_SIMILAR edges between retrieved chunk nodes
+            # Add SEMANTIC_SIMILAR edges between retrieved chunk nodes (green)
             for pair in similar_pairs:
                 from_id, to_id = pair["from_id"], pair["to_id"]
                 if from_id in added_chunks and to_id in added_chunks:
                     sim = pair["similarity"]
                     title = f"SEMANTIC_SIMILAR ({sim:.3f})" if sim is not None else "SEMANTIC_SIMILAR"
-                    net.add_edge(from_id, to_id, color="#2D9B5C", width=2.5,
+                    net.add_edge(from_id, to_id, color="#2D9B5C", width=3,
                                  dashes=True, title=title)
 
             # Generate HTML directly as a string (no temp file: Windows
@@ -172,31 +173,31 @@ def render_graph_view(driver, chunk_ids: List[str], show_similar: bool = True):
             # round-trip unreliable). Same PyVis output, kept in memory.
             html_content = net.generate_html()
 
-            # Inject border, height, and styling directly into the PyVis HTML's #mynetwork div
-            # This ensures ONE single container with border (no separate wrapper)
-            html_content = re.sub(
-                r'<div id="mynetwork" class="card" style="width: 100%; height: 600px;"',
-                '<div id="mynetwork" class="card" style="width: 100%; height: 620px; border: 1px solid #E2DFD6; border-radius: 8px; overflow: hidden; background: #FFFFFF;"',
-                html_content
+            # Style the emitted #mynetwork CSS rule (pyvis 0.3.2 emits the
+            # canvas size as a stylesheet rule, not inline div styles).
+            # Rounded corners/overflow only — size comes from Network().
+            html_content = html_content.replace(
+                "#mynetwork {",
+                "#mynetwork {\n border-radius: 8px;\n overflow: hidden;",
+                1,
             )
 
             # Also ensure body and html have proper sizing
             html_content = re.sub(
                 r'<body>',
-                '<body style="margin: 0; padding: 0; overflow: hidden; height: 620px;">',
+                '<body style="margin: 0; padding: 0; overflow: hidden; height: 780px;">',
                 html_content
             )
 
             html_content = re.sub(
                 r'<html>',
-                '<html style="height: 620px;">',
+                '<html style="height: 780px;">',
                 html_content
             )
 
             # Display graph using st.components.v1.html() for interactive PyVis content
-            # All styling is now inside the PyVis HTML itself
-            # Height is fixed at 620px to match the HTML content
-            components.html(html_content, height=620, scrolling=False)
+            # Height matches the 780px canvas; width fills the tab column.
+            components.html(html_content, height=780, scrolling=False)
 
             # Legend
             st.markdown(

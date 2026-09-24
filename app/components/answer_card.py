@@ -24,23 +24,11 @@ def render_answer_card(answer: str):
         answer
     )
 
-    # Render answer in clean card
+    # Render answer in hero card (presentation only; text unchanged)
     st.markdown(
         f"""
-        <div style="
-            background: #FFFFFF;
-            border: 1px solid #E2DFD6;
-            border-left: 3px solid #0F5257;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        ">
-            <p style="
-                font-size: 1rem;
-                line-height: 1.7;
-                color: #1A1D1E;
-                margin: 0;
-            ">{answer_html}</p>
+        <div class="answer-hero">
+            <p>{answer_html}</p>
         </div>
         """,
         unsafe_allow_html=True
