@@ -21,3 +21,5 @@ numpy
 tiktoken
 groq
 faiss-cpu
+fastapi
+uvicorn

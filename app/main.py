@@ -4,8 +4,11 @@ Full-featured Q&A interface with query decomposition, PageRank reranking, and gr
 """
 
 import streamlit as st
+import json
 import os
 import sys
+import urllib.request
+import urllib.error
 
 # Page configuration - MUST be first Streamlit command
 st.set_page_config(
@@ -15,6 +18,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# FastAPI backend (Step 3: Streamlit talks to the API, never to Neo4j/LLM
+# directly for the query flow). Configurable; defaults to local laptop API.
+API_URL = os.getenv("GRAPHRAG_API_URL", "http://localhost:8000").rstrip("/")
+
 # Add project root to path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
@@ -22,12 +29,6 @@ sys.path.insert(0, project_root)
 from neo4j import GraphDatabase
 
 from src.config import settings
-from src.embeddings import get_embedder, get_retrieval_model_name
-from src.generation.llm_client import LLMClient
-from src.generation.prompt_templates import build_rag_prompt
-from src.retrieval.decompose import retrieve_decomposed
-from src.retrieval.retrieve import retrieve
-from src.retrieval.retrieve_with_pagerank import retrieve_with_pagerank
 
 from app.components.search_bar import render_search_bar, render_sidebar_settings
 from app.components.answer_card import render_answer_card
@@ -42,8 +43,13 @@ if os.path.exists(css_path):
 
 
 @st.cache_resource
-def init_neo4j_driver():
-    """Initialize Neo4j driver (cached)."""
+def init_graph_driver():
+    """Read-only Neo4j driver used ONLY by the Knowledge Graph visualization.
+
+    Retrieval and answer generation go through the FastAPI backend; this
+    driver never runs retrieval queries, only the viz component's
+    chunk/entity lookup.
+    """
     try:
         driver = GraphDatabase.driver(
             settings.NEO4J_URI,
@@ -55,36 +61,52 @@ def init_neo4j_driver():
         return driver
     except Exception as e:
         st.error(f"Failed to connect to Neo4j: {str(e)}")
-        st.info("Please ensure Neo4j is running and credentials are correct in .env file")
+        st.info("Graph visualization needs Neo4j; answers still work via the API.")
         return None
 
 
-@st.cache_resource
-def init_embedding_model():
-    """Initialize sentence transformer model (cached).
+def build_query_payload(query, system_mode, expand_graph, use_adaptive, use_gds,
+                        use_decomposition, top_k) -> dict:
+    """Build the POST /query body from the current UI settings (pure)."""
+    return {
+        "query": query,
+        "system_mode": system_mode,
+        "expand_graph": expand_graph,
+        "use_adaptive": use_adaptive,
+        "use_gds": use_gds,
+        "use_decomposition": use_decomposition,
+        "top_k": top_k,
+    }
 
-    Uses the central embedding provider so the model always matches
-    settings.EMBEDDING_MODEL_NAME (PDF baseline: all-MiniLM-L6-v2).
-    """
+
+def api_post(path: str, payload: dict, timeout: int = 600) -> dict:
+    """POST JSON to the FastAPI backend (stdlib only); raise RuntimeError on failure."""
+    request = urllib.request.Request(
+        API_URL + path,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     try:
-        return get_embedder(get_retrieval_model_name())
-    except Exception as e:
-        st.error(f"Failed to load embedding model: {str(e)}")
-        return None
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:
+            detail = json.loads(e.read().decode("utf-8")).get("detail", str(e))
+        except Exception:
+            detail = str(e)
+        raise RuntimeError(f"API error {e.code}: {detail}")
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"Cannot reach GraphRAG API at {API_URL}: {e.reason}")
 
 
-@st.cache_resource
-def init_llm_client():
-    """Initialize LLM client (cached)."""
+def api_health() -> bool:
+    """True when GET /health answers 200 (backend reachable)."""
     try:
-        return LLMClient(
-            backend=settings.LLM_BACKEND,
-            model=settings.LLM_MODEL,
-            temperature=0.0
-        )
-    except Exception as e:
-        st.error(f"Failed to initialize LLM client: {str(e)}")
-        return None
+        with urllib.request.urlopen(API_URL + "/health", timeout=10) as response:
+            return response.status == 200
+    except Exception:
+        return False
 
 
 def set_example_question(question):
@@ -95,12 +117,14 @@ def set_example_question(question):
 def main():
     """Main application logic."""
 
-    # Initialize components
-    driver = init_neo4j_driver()
-    embedding_model = init_embedding_model()
-    llm_client = init_llm_client()
+    # Initialize components: only the viz-only graph driver lives here now.
+    # Retrieval/generation run in FastAPI; gate on its health instead.
+    driver = init_graph_driver()
 
-    if not driver or not embedding_model or not llm_client:
+    if not api_health():
+        st.error(f"GraphRAG API is unreachable at {API_URL}.")
+        st.info("Start it with: uvicorn api.main:app --host 127.0.0.1 --port 8000 "
+                "(or set GRAPHRAG_API_URL to its address)")
         st.stop()
 
     # Sidebar: retrieval settings only (evaluation panel removed from UI;
@@ -165,47 +189,15 @@ def main():
         else:
             with st.spinner("Processing your question..."):
                 try:
-                    is_baseline = (system_mode == "Baseline")
-                    # Step 1: Retrieval
-                    if use_decomposition:
-                        st.info("Decomposing query into sub-questions...")
-                        retrieved_chunks = retrieve_decomposed(
-                            driver=driver,
-                            embedding_model=embedding_model,
-                            question=query,
-                            llm_client=llm_client,
-                            top_k_per_subq=3,
-                            expand_graph=expand_graph
-                        )
-                        # Limit to top_k after merging
-                        retrieved_chunks = retrieved_chunks[:top_k]
-                    elif is_baseline:
-                        # PDF baseline: required expansion + legacy fusion,
-                        # no PageRank, no adaptive skipping.
-                        retrieved_chunks = retrieve(
-                            driver=driver,
-                            embedding_model=embedding_model,
-                            query=query,
-                            top_k=top_k,
-                            expand_graph=expand_graph,
-                            adaptive_enabled=False,
-                            alpha=0.7,
-                            beta=0.3,
-                            gamma=0.0,
-                        )
-                        for c in retrieved_chunks:
-                            c["pagerank_score"] = 0.0
-                            c["final_score"] = c["combined_score"]
-                    else:
-                        retrieved_chunks = retrieve_with_pagerank(
-                            driver=driver,
-                            embedding_model=embedding_model,
-                            query=query,
-                            top_k=top_k,
-                            expand_graph=expand_graph,
-                            use_pagerank=use_gds,
-                            adaptive_enabled=use_adaptive
-                        )
+                    # Query flow goes through FastAPI (same branching/payload
+                    # the backend implements from the Streamlit settings).
+                    payload = build_query_payload(
+                        query, system_mode, expand_graph, use_adaptive,
+                        use_gds, use_decomposition, top_k,
+                    )
+                    data = api_post("/query", payload)
+                    answer = data["answer"]
+                    retrieved_chunks = data["retrieved_chunks"]
 
                     if not retrieved_chunks:
                         st.warning("No relevant chunks found. Try a different question.")
@@ -229,8 +221,8 @@ def main():
                         unsafe_allow_html=True
                     )
 
-                    # Retrieval strategy summary (adaptive decision + fusion weights)
-                    strategy = retrieved_chunks[0].get("retrieval_strategy", "n/a") if retrieved_chunks else "n/a"
+                    # Strategy comes from the API response (computed server-side).
+                    strategy = data.get("retrieval_strategy", "n/a")
                     breakdown = retrieved_chunks[0].get("score_breakdown", {}) if retrieved_chunks else {}
                     weights_line = ""
                     if breakdown:
@@ -257,11 +249,6 @@ def main():
                         unsafe_allow_html=True
                     )
 
-                    # Step 2: Generate answer
-                    with st.spinner("Generating answer..."):
-                        prompt = build_rag_prompt(query, retrieved_chunks)
-                        answer = llm_client.generate(prompt)
-
                     # Display results in tabs (same data, organized)
                     st.markdown('<div style="margin: 2rem 0;"></div>', unsafe_allow_html=True)
 
@@ -269,6 +256,7 @@ def main():
                         ["Answer", "Evidence", "Knowledge Graph"]
                     )
 
+                    # Answer + evidence + graph come from the API response as-is.
                     with answer_tab:
                         render_answer_card(answer)
 
@@ -276,8 +264,7 @@ def main():
                         render_evidence_panel(retrieved_chunks)
 
                     with graph_tab:
-                        chunk_ids = [c["chunk_id"] for c in retrieved_chunks]
-                        render_graph_view(driver, chunk_ids)
+                        render_graph_view(driver, data.get("chunk_ids", []))
 
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
