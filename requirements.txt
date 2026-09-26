@@ -1,25 +1,10 @@
-datasets
-sentence-transformers
-scispacy
-spacy
-neo4j
-graphdatascience
-hdbscan
-scikit-learn
-umap-learn
-plotly
-matplotlib
-pyvis
-rouge-score
-bert-score
+# Streamlit Cloud frontend runtime ONLY.
+# The Streamlit app (app.py -> app/main.py -> app/components/*) talks to the
+# GraphRAG backend over HTTP (POST {GRAPHRAG_API_URL}/query), so the Cloud
+# runtime needs just the UI + viz + config packages below.
+# Everything else (embeddings, torch, scispacy, GDS, LLM clients, eval)
+# stays in requirements-backend.txt for local development / the FastAPI backend.
 streamlit
-openai
+neo4j
 python-dotenv
-tqdm
-pandas
-numpy
-tiktoken
-groq
-faiss-cpu
-fastapi
-uvicorn
+pyvis
