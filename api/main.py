@@ -83,6 +83,69 @@ def health() -> dict:
     return {"status": "ok"}
 
 
+@app.get("/graph")
+def graph_data(chunk_ids: str = "") -> dict:
+    """Viz data for the Knowledge Graph tab (same queries graph_view ran locally).
+
+    Query param: comma-separated chunk IDs. Returns Neo4j records as plain
+    JSON-serializable dicts so Streamlit Cloud never touches Neo4j.
+    """
+    ids = [c.strip() for c in chunk_ids.split(",") if c.strip()]
+    if not ids:
+        raise HTTPException(status_code=400, detail="chunk_ids must not be empty.")
+    try:
+        driver = get_driver()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Backend unavailable (Neo4j): {e}")
+    try:
+        with driver.session() as session:
+            records = [
+                {
+                    "chunk_id": r["chunk_id"],
+                    "chunk_text": r["chunk_text"],
+                    "entity_name": r["entity_name"],
+                    "entity_type": r["entity_type"],
+                }
+                for r in session.run(
+                    """
+                    MATCH (c:Chunk)-[r:MENTIONS]->(e:Entity)
+                    WHERE c.chunk_id IN $chunkIds
+                    RETURN c.chunk_id AS chunk_id,
+                           c.text AS chunk_text,
+                           e.name AS entity_name,
+                           'Entity' AS entity_type
+                    LIMIT 200
+                    """,
+                    chunkIds=ids,
+                )
+            ]
+            try:
+                similar_pairs = [
+                    {
+                        "from_id": r["from_id"],
+                        "to_id": r["to_id"],
+                        "similarity": r["similarity"],
+                    }
+                    for r in session.run(
+                        """
+                        MATCH (a:Chunk)-[r:SEMANTIC_SIMILAR]->(b:Chunk)
+                        WHERE a.chunk_id IN $chunkIds AND b.chunk_id IN $chunkIds
+                        RETURN DISTINCT a.chunk_id AS from_id, b.chunk_id AS to_id,
+                               r.similarity AS similarity
+                        LIMIT 200
+                        """,
+                        chunkIds=ids,
+                    )
+                ]
+            except Exception:
+                similar_pairs = []
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Graph query failed: {e}")
+    return {"records": records, "similar_pairs": similar_pairs}
+
+
 @app.post("/query")
 def run_query(req: QueryRequest) -> dict:
     """Run one GraphRAG query with the existing pipeline; return answer + evidence."""

@@ -26,10 +26,6 @@ API_URL = os.getenv("GRAPHRAG_API_URL", "http://localhost:8000").rstrip("/")
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from neo4j import GraphDatabase
-
-from src.config import settings
-
 from app.components.search_bar import render_search_bar, render_sidebar_settings
 from app.components.answer_card import render_answer_card
 from app.components.evidence_panel import render_evidence_panel
@@ -42,27 +38,27 @@ if os.path.exists(css_path):
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
-@st.cache_resource
-def init_graph_driver():
-    """Read-only Neo4j driver used ONLY by the Knowledge Graph visualization.
-
-    Retrieval and answer generation go through the FastAPI backend; this
-    driver never runs retrieval queries, only the viz component's
-    chunk/entity lookup.
-    """
+def api_get(path: str, timeout: int = 120) -> dict:
+    """GET JSON from the FastAPI backend (stdlib only); raise RuntimeError on failure."""
     try:
-        driver = GraphDatabase.driver(
-            settings.NEO4J_URI,
-            auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
-        )
-        # Test connection
-        with driver.session() as session:
-            session.run("RETURN 1")
-        return driver
-    except Exception as e:
-        st.error(f"Failed to connect to Neo4j: {str(e)}")
-        st.info("Graph visualization needs Neo4j; answers still work via the API.")
-        return None
+        with urllib.request.urlopen(API_URL + path, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:
+            detail = json.loads(e.read().decode("utf-8")).get("detail", str(e))
+        except Exception:
+            detail = str(e)
+        raise RuntimeError(f"API error {e.code}: {detail}")
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"Cannot reach GraphRAG API at {API_URL}: {e.reason}")
+
+
+def fetch_graph_data(chunk_ids: list) -> dict:
+    """Fetch Knowledge Graph viz data for chunk IDs (empty lists if none)."""
+    if not chunk_ids:
+        return {"records": [], "similar_pairs": []}
+    from urllib.parse import quote
+    return api_get("/graph?chunk_ids=" + quote(",".join(chunk_ids)))
 
 
 def build_query_payload(query, system_mode, expand_graph, use_adaptive, use_gds,
@@ -117,10 +113,8 @@ def set_example_question(question):
 def main():
     """Main application logic."""
 
-    # Initialize components: only the viz-only graph driver lives here now.
-    # Retrieval/generation run in FastAPI; gate on its health instead.
-    driver = init_graph_driver()
-
+    # No local backends: retrieval/generation/graph data all come from FastAPI.
+    # Gate on API health instead.
     if not api_health():
         st.error(f"GraphRAG API is unreachable at {API_URL}.")
         st.info("Start it with: uvicorn api.main:app --host 127.0.0.1 --port 8000 "
@@ -264,7 +258,7 @@ def main():
                         render_evidence_panel(retrieved_chunks)
 
                     with graph_tab:
-                        render_graph_view(driver, data.get("chunk_ids", []))
+                        render_graph_view(fetch_graph_data(data.get("chunk_ids", [])))
 
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
